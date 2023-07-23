@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Navigate, useNavigate } from "react-router-dom";
 import { Link } from 'react-router-dom';
 
 const BookAppointment = () => {
+  const [user, setUser] = useState({});
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    console.log("storedUser: "+storedUser);
+    if (storedUser !== null) {
+      setUser(JSON.parse(storedUser));
+    }
+    if(storedUser == null){
+      navigate('/login');
+    }
+  }, []);
+
   const [doctors, setDoctors] = useState([]);
 
   useEffect(() => {
@@ -21,7 +36,7 @@ const BookAppointment = () => {
   // State to hold form data
   const [formData, setFormData] = useState({
     patientId: '',
-    doctorName: '',
+    doctorId: '',
     date: '',
     time: '',
     reason: '',
@@ -30,10 +45,30 @@ const BookAppointment = () => {
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add form submission logic here
-    console.log(formData);
-  };
+    const postData = {
+      patient: user.patient_id,
+      doctor: 1,
+      date: formData.date,
+      time: formData.time,
+      reason: formData.reason,
+    };
 
+    axios.post('http://127.0.0.1:8000/api/appointment-create', postData)
+    .then((response) => {
+      console.log('Appointment booked successfully!', response.data);
+      // You can handle success actions here, such as showing a success message to the user
+    })
+    .catch((error) => {
+      if (error.response.data.detail == "An Appointment already exists"){
+          return alert("Appointment already exists");
+      }else{
+
+        console.error('Error booking appointment:', error);
+        // You can handle error actions here, such as showing an error message to the user
+      }
+    });
+  };
+  
   // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,15 +77,13 @@ const BookAppointment = () => {
 
   return (
     <section className="absolute top-0 min-h-screen w-full border border-red-500 flex items-center">
-      <div className="mx-auto w-1/2 h-[80vh] flex flex-col items-center justify-evenly bg-[#FFE1DC] rounded-lg">
-        <form onSubmit={handleSubmit} className="w-1/2 flex flex-col space-y-12 ">
+      <div className="mx-auto w-full lg:w-1/2 h-[80vh] flex flex-col items-center justify-evenly bg-[#FFE1DC] rounded-lg">
+        <form onSubmit={handleSubmit} className="w-3/4 lg:w-1/2 flex flex-col space-y-12 ">
           <div className="w-full flex flex-col space-y-6">
                 <div className='w-full flex flex-col space-y-1'>
-                <label htmlFor="patientId" className='text-sm font-semibold'>Patient ID</label>
-                <input type="text" id="patientId" name="patientId" placeholder="Patient ID" value={formData.patientId} onChange={handleChange} className="p-2 border border-gray-400 rounded"/>
-                <Link to={'/sign-up'}>
-                    <p className='text-xs underline text-[#ff3d16] font-semibold hover:text-orange-700'>Don't have an ID? Sign up here</p>
-                </Link>
+                  <Link to={'/sign-up'}>
+                      <p className='text-center text-xs underline text-[#ff3d16] font-semibold hover:text-orange-700'>Don't have an ID? Sign up here</p>
+                  </Link>
                 </div>
                 <div className='w-full flex flex-col space-y-1'>
                     <label htmlFor="doctorName" className='text-sm font-semibold focus:border focus:border-orange-600'>Doctor</label>
